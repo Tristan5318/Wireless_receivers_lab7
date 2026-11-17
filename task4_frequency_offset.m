@@ -9,9 +9,27 @@ for i=1:numel(offsets)
     errors=0; estimates=zeros(Nframes,1);
     for k=1:Nframes
         bits=randi([0 1],Nbits,1);
-        [s,conf]=tx(bits,conf,k);
+        [s,conf]=tx1(bits,conf,k);
         s=s/(max(abs(s))+0.3);
-        r=[zeros(round(0.1*fs),1);s;zeros(round(0.1*fs),1)];
+        % Add silence before and after transmission
+        padded = [zeros(fs,1); s; zeros(fs,1)];
+
+        % Configure audio playback and recording
+        player = audioplayer([padded, zeros(size(padded))], fs, 16);
+        recorder = audiorecorder(fs, 16, 1, 1);
+
+        % Start recording before playback
+        record(recorder);
+
+        % Transmit the acoustic signal
+        playblocking(player);
+
+        % Record the remaining signal
+        pause(0.5);
+        stop(recorder);
+
+        % Retrieve the microphone recording
+        r = getaudiodata(recorder);
         conf.offset=offsets(i);
         [decoded,conf]=rx(r,conf,k);
         errors=errors+nnz(decoded~=bits);

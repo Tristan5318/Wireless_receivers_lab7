@@ -16,10 +16,47 @@ for i=1:numel(rates)
         bits=randi([0 1],Nbits,1);
         [s,conf]=tx(bits,conf,k);
         s=s/(max(abs(s))+0.3);
-        r=[zeros(round(0.1*fs),1);s;zeros(round(0.1*fs),1)];
+        % Add silence before and after transmission
+        padded = [zeros(fs,1); s; zeros(fs,1)];
+
+        % Configure audio playback and recording
+        player = audioplayer([padded, zeros(size(padded))], fs, 16);
+        recorder = audiorecorder(fs, 16, 1, 0);
+
+        % Start recording before playback
+        record(recorder);
+
+        % Transmit the acoustic signal
+        playblocking(player);
+
+        % Record the remaining signal
+        pause(0.5);
+        stop(recorder);
+
+        % Retrieve the microphone recording
+        r = getaudiodata(recorder);
         [detected,conf]=rx(r,conf,k);
         errors=errors+nnz(bits~=detected);
     end
+    % Add silence before and after transmission
+padded = [zeros(fs,1); s; zeros(fs,1)];
+
+% Configure audio playback and recording
+player = audioplayer([padded, zeros(size(padded))], fs, 16);
+recorder = audiorecorder(fs, 16, 1, 0);
+
+% Start recording before playback
+record(recorder);
+
+% Transmit the acoustic signal
+playblocking(player);
+
+% Record the remaining signal
+pause(0.5);
+stop(recorder);
+
+% Retrieve the microphone recording
+r = getaudiodata(recorder);
     BER(i)=errors/(Nframes*Nbits);
     fprintf('Rate %d sym/s: BER %.5g\n',rates(i),BER(i));
 end

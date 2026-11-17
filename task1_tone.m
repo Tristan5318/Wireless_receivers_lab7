@@ -9,6 +9,17 @@ for k = 1:length(info.input)
         info.input(k).ID, info.input(k).Name);
 end
 
+%% Seleziona esclusivamente il microfono USB
+usbIdx = find(contains({info.input.Name}, 'USB PnP Audio Device'), 1);
+
+if isempty(usbIdx)
+    error('Microfono USB non trovato. Collega il dispositivo e riprova.');
+end
+
+micID = info.input(usbIdx).ID;
+fprintf('Microfono selezionato: ID %d | %s\n', ...
+    micID, info.input(usbIdx).Name);
+
 %% Parameters
 fs = 48000;
 fc = 4000;
@@ -26,7 +37,7 @@ sPB = 0.2 * sPB;
 
 %% Acoustic transmission and recording
 player = audioplayer(sPB, fs, 16);
-recorder = audiorecorder(fs, 16, 1, 0);
+recorder = audiorecorder(fs, 16, 1, micID);
 
 disp('Recording and transmitting...');
 
